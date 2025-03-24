@@ -21,26 +21,26 @@ from retrying import retry
 
 
 class TestStopConditions(unittest.TestCase):
-    def test_never_stop(self):
+    def test_never_stop(self) -> None:
         r = Retrying()
         self.assertFalse(r.stop(3, 6546))
 
-    def test_stop_after_attempt(self):
+    def test_stop_after_attempt(self) -> None:
         r = Retrying(stop_max_attempt_number=3)
         self.assertFalse(r.stop(2, 6546))
         self.assertTrue(r.stop(3, 6546))
         self.assertTrue(r.stop(4, 6546))
 
-    def test_stop_after_delay(self):
+    def test_stop_after_delay(self) -> None:
         r = Retrying(stop_max_delay=1000)
         self.assertFalse(r.stop(2, 999))
         self.assertTrue(r.stop(2, 1000))
         self.assertTrue(r.stop(2, 1001))
 
-    def test_legacy_explicit_stop_type(self):
+    def test_legacy_explicit_stop_type(self) -> None:
         Retrying(stop="stop_after_attempt")
 
-    def test_stop_func(self):
+    def test_stop_func(self) -> None:
         r = Retrying(stop_func=lambda attempt, delay: attempt == delay)
         self.assertFalse(r.stop(1, 3))
         self.assertFalse(r.stop(100, 99))
@@ -48,21 +48,21 @@ class TestStopConditions(unittest.TestCase):
 
 
 class TestWaitConditions(unittest.TestCase):
-    def test_no_sleep(self):
+    def test_no_sleep(self) -> None:
         r = Retrying()
         self.assertEqual(0, r.wait(18, 9879))
 
-    def test_fixed_sleep(self):
+    def test_fixed_sleep(self) -> None:
         r = Retrying(wait_fixed=1000)
         self.assertEqual(1000, r.wait(12, 6546))
 
-    def test_incrementing_sleep(self):
+    def test_incrementing_sleep(self) -> None:
         r = Retrying(wait_incrementing_start=500, wait_incrementing_increment=100)
         self.assertEqual(500, r.wait(1, 6546))
         self.assertEqual(600, r.wait(2, 6546))
         self.assertEqual(700, r.wait(3, 6546))
 
-    def test_random_sleep(self):
+    def test_random_sleep(self) -> None:
         r = Retrying(wait_random_min=1000, wait_random_max=2000)
         times = set()
         times.add(r.wait(1, 6546))
@@ -76,7 +76,7 @@ class TestWaitConditions(unittest.TestCase):
             self.assertTrue(t >= 1000)
             self.assertTrue(t <= 2000)
 
-    def test_random_sleep_without_min(self):
+    def test_random_sleep_without_min(self) -> None:
         r = Retrying(wait_random_max=2000)
         times = set()
         times.add(r.wait(1, 6546))
@@ -90,7 +90,7 @@ class TestWaitConditions(unittest.TestCase):
             self.assertTrue(t >= 0)
             self.assertTrue(t <= 2000)
 
-    def test_exponential(self):
+    def test_exponential(self) -> None:
         r = Retrying(wait_exponential_max=100000)
         self.assertEqual(r.wait(1, 0), 2)
         self.assertEqual(r.wait(2, 0), 4)
@@ -99,7 +99,7 @@ class TestWaitConditions(unittest.TestCase):
         self.assertEqual(r.wait(5, 0), 32)
         self.assertEqual(r.wait(6, 0), 64)
 
-    def test_exponential_with_max_wait(self):
+    def test_exponential_with_max_wait(self) -> None:
         r = Retrying(wait_exponential_max=40)
         self.assertEqual(r.wait(1, 0), 2)
         self.assertEqual(r.wait(2, 0), 4)
@@ -110,7 +110,7 @@ class TestWaitConditions(unittest.TestCase):
         self.assertEqual(r.wait(7, 0), 40)
         self.assertEqual(r.wait(50, 0), 40)
 
-    def test_exponential_with_max_wait_and_multiplier(self):
+    def test_exponential_with_max_wait_and_multiplier(self) -> None:
         r = Retrying(wait_exponential_max=50000, wait_exponential_multiplier=1000)
         self.assertEqual(r.wait(1, 0), 2000)
         self.assertEqual(r.wait(2, 0), 4000)
@@ -121,10 +121,10 @@ class TestWaitConditions(unittest.TestCase):
         self.assertEqual(r.wait(7, 0), 50000)
         self.assertEqual(r.wait(50, 0), 50000)
 
-    def test_legacy_explicit_wait_type(self):
+    def test_legacy_explicit_wait_type(self) -> None:
         Retrying(wait="exponential_sleep")
 
-    def test_wait_func(self):
+    def test_wait_func(self) -> None:
         r = Retrying(wait_func=lambda attempt, delay: attempt * delay)
         self.assertEqual(r.wait(1, 5), 5)
         self.assertEqual(r.wait(2, 11), 22)
@@ -136,11 +136,11 @@ class NoneReturnUntilAfterCount:
     This class holds counter state for invoking a method several times in a row.
     """
 
-    def __init__(self, count):
+    def __init__(self, count: int) -> None:
         self.counter = 0
         self.count = count
 
-    def go(self):
+    def go(self) -> bool:
         """
         Return None until after count threshold has been crossed, then return True.
         """
@@ -155,11 +155,11 @@ class NoIOErrorAfterCount:
     This class holds counter state for invoking a method several times in a row.
     """
 
-    def __init__(self, count):
+    def __init__(self, count: int) -> None:
         self.counter = 0
         self.count = count
 
-    def go(self):
+    def go(self) -> bool:
         """
         Raise an IOError until after count threshold has been crossed, then return True.
         """
@@ -174,11 +174,11 @@ class NoNameErrorAfterCount:
     This class holds counter state for invoking a method several times in a row.
     """
 
-    def __init__(self, count):
+    def __init__(self, count: int) -> None:
         self.counter = 0
         self.count = count
 
-    def go(self):
+    def go(self) -> bool:
         """
         Raise a NameError until after count threshold has been crossed, then return True.
         """
@@ -198,10 +198,10 @@ class CustomError(Exception):
     classes don't extend from the hierarchy.
     """
 
-    def __init__(self, value):
+    def __init__(self, value: str) -> None:
         self.value = value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr(self.value)
 
 
@@ -210,11 +210,11 @@ class NoCustomErrorAfterCount:
     This class holds counter state for invoking a method several times in a row.
     """
 
-    def __init__(self, count):
+    def __init__(self, count: int) -> None:
         self.counter = 0
         self.count = count
 
-    def go(self):
+    def go(self) -> bool:
         """
         Raise a CustomError until after count threshold has been crossed, then return True.
         """
@@ -225,69 +225,69 @@ class NoCustomErrorAfterCount:
         return True
 
 
-def retry_if_result_none(result):
+def retry_if_result_none(result: Any) -> bool:
     return result is None
 
 
-def retry_if_exception_of_type(retryable_types):
-    def retry_if_exception_these_types(exception):
+def retry_if_exception_of_type(retryable_types: Union[Type[BaseException], Tuple[Type[BaseException], ...]]) -> Callable[[BaseException], bool]:
+    def retry_if_exception_these_types(exception: BaseException) -> bool:
         print("Detected Exception of type: {0}".format(str(type(exception))))
         return isinstance(exception, retryable_types)
 
     return retry_if_exception_these_types
 
 
-def current_time_ms():
+def current_time_ms() -> int:
     return int(round(time.time() * 1000))
 
 
 @retry(wait_fixed=50, retry_on_result=retry_if_result_none)
-def _retryable_test_with_wait(thing):
+def _retryable_test_with_wait(thing: NoneReturnUntilAfterCount) -> bool:
     return thing.go()
 
 
 @retry(stop_max_attempt_number=3, retry_on_result=retry_if_result_none)
-def _retryable_test_with_stop(thing):
+def _retryable_test_with_stop(thing: NoneReturnUntilAfterCount) -> bool:
     return thing.go()
 
 
 @retry(retry_on_exception=(IOError,))
-def _retryable_test_with_exception_type_io(thing):
+def _retryable_test_with_exception_type_io(thing: NoIOErrorAfterCount) -> bool:
     return thing.go()
 
 
 @retry(retry_on_exception=retry_if_exception_of_type(IOError), wrap_exception=True)
-def _retryable_test_with_exception_type_io_wrap(thing):
+def _retryable_test_with_exception_type_io_wrap(thing: NoIOErrorAfterCount) -> bool:
     return thing.go()
 
 
 @retry(stop_max_attempt_number=3, retry_on_exception=(IOError,))
-def _retryable_test_with_exception_type_io_attempt_limit(thing):
+def _retryable_test_with_exception_type_io_attempt_limit(thing: NoIOErrorAfterCount) -> bool:
     return thing.go()
 
 
 @retry(stop_max_attempt_number=3, retry_on_exception=(IOError,), wrap_exception=True)
-def _retryable_test_with_exception_type_io_attempt_limit_wrap(thing):
+def _retryable_test_with_exception_type_io_attempt_limit_wrap(thing: NoIOErrorAfterCount) -> bool:
     return thing.go()
 
 
 @retry
-def _retryable_default(thing):
+def _retryable_default(thing: Union[NoNameErrorAfterCount, NoCustomErrorAfterCount]) -> bool:
     return thing.go()
 
 
 @retry()
-def _retryable_default_f(thing):
+def _retryable_default_f(thing: Union[NoNameErrorAfterCount, NoCustomErrorAfterCount]) -> bool:
     return thing.go()
 
 
 @retry(retry_on_exception=retry_if_exception_of_type(CustomError))
-def _retryable_test_with_exception_type_custom(thing):
+def _retryable_test_with_exception_type_custom(thing: NoCustomErrorAfterCount) -> bool:
     return thing.go()
 
 
 @retry(retry_on_exception=retry_if_exception_of_type(CustomError), wrap_exception=True)
-def _retryable_test_with_exception_type_custom_wrap(thing):
+def _retryable_test_with_exception_type_custom_wrap(thing: NoCustomErrorAfterCount) -> bool:
     return thing.go()
 
 
@@ -295,7 +295,7 @@ def _retryable_test_with_exception_type_custom_wrap(thing):
     stop_max_attempt_number=3,
     retry_on_exception=retry_if_exception_of_type(CustomError),
 )
-def _retryable_test_with_exception_type_custom_attempt_limit(thing):
+def _retryable_test_with_exception_type_custom_attempt_limit(thing: NoCustomErrorAfterCount) -> bool:
     return thing.go()
 
 
@@ -304,19 +304,19 @@ def _retryable_test_with_exception_type_custom_attempt_limit(thing):
     retry_on_exception=retry_if_exception_of_type(CustomError),
     wrap_exception=True,
 )
-def _retryable_test_with_exception_type_custom_attempt_limit_wrap(thing):
+def _retryable_test_with_exception_type_custom_attempt_limit_wrap(thing: NoCustomErrorAfterCount) -> bool:
     return thing.go()
 
 
 class TestDecoratorWrapper(unittest.TestCase):
-    def test_with_wait(self):
+    def test_with_wait(self) -> None:
         start = current_time_ms()
         result = _retryable_test_with_wait(NoneReturnUntilAfterCount(5))
         t = current_time_ms() - start
         self.assertTrue(t >= 250)
         self.assertTrue(result)
 
-    def test_with_stop_on_return_value(self):
+    def test_with_stop_on_return_value(self) -> None:
         try:
             _retryable_test_with_stop(NoneReturnUntilAfterCount(5))
             self.fail("Expected RetryError after 3 attempts")
@@ -326,7 +326,7 @@ class TestDecoratorWrapper(unittest.TestCase):
             self.assertTrue(re.last_attempt.value is None)
             print(re)
 
-    def test_with_stop_on_exception(self):
+    def test_with_stop_on_exception(self) -> None:
         try:
             _retryable_test_with_stop(NoIOErrorAfterCount(5))
             self.fail("Expected IOError")
@@ -334,7 +334,7 @@ class TestDecoratorWrapper(unittest.TestCase):
             self.assertTrue(isinstance(re, IOError))
             print(re)
 
-    def test_retry_if_exception_of_type(self):
+    def test_retry_if_exception_of_type(self) -> None:
         self.assertTrue(_retryable_test_with_exception_type_io(NoIOErrorAfterCount(5)))
 
         try:
@@ -381,7 +381,7 @@ class TestDecoratorWrapper(unittest.TestCase):
             self.assertTrue(re.last_attempt.value[2] is not None)
             print(re)
 
-    def test_wrapped_exception(self):
+    def test_wrapped_exception(self) -> None:
 
         # base exception cases
         self.assertTrue(
@@ -439,7 +439,7 @@ class TestDecoratorWrapper(unittest.TestCase):
             )
             print(re)
 
-    def test_defaults(self):
+    def test_defaults(self) -> None:
         self.assertTrue(_retryable_default(NoNameErrorAfterCount(5)))
         self.assertTrue(_retryable_default_f(NoNameErrorAfterCount(5)))
         self.assertTrue(_retryable_default(NoCustomErrorAfterCount(5)))
@@ -449,28 +449,28 @@ class TestDecoratorWrapper(unittest.TestCase):
 class TestBeforeAfterAttempts(unittest.TestCase):
     _attempt_number = 0
 
-    def test_before_attempts(self):
+    def test_before_attempts(self) -> None:
         TestBeforeAfterAttempts._attempt_number = 0
 
-        def _before(attempt_number):
+        def _before(attempt_number: int) -> None:
             TestBeforeAfterAttempts._attempt_number = attempt_number
 
         @retry(wait_fixed=1000, stop_max_attempt_number=1, before_attempts=_before)
-        def _test_before():
+        def _test_before() -> None:
             pass
 
         _test_before()
 
         self.assertTrue(TestBeforeAfterAttempts._attempt_number is 1)
 
-    def test_after_attempts(self):
+    def test_after_attempts(self) -> None:
         TestBeforeAfterAttempts._attempt_number = 0
 
-        def _after(attempt_number):
+        def _after(attempt_number: int) -> None:
             TestBeforeAfterAttempts._attempt_number = attempt_number
 
         @retry(wait_fixed=100, stop_max_attempt_number=3, after_attempts=_after)
-        def _test_after():
+        def _test_after() -> None:
             if TestBeforeAfterAttempts._attempt_number < 2:
                 raise Exception("testing after_attempts handler")
             else:
