@@ -17,19 +17,22 @@ import sys
 import time
 import traceback
 from functools import wraps
+from typing import Any, Callable, Iterable, Optional, Tuple, Type, Union
 
 # sys.maxint / 2, since Python 3.2 doesn't have a sys.maxint...
 MAX_WAIT = 1073741823
 
 
-def _retry_if_exception_of_type(retryable_types):
-    def _retry_if_exception_these_types(exception):
+def _retry_if_exception_of_type(
+    retryable_types: Tuple[Type[BaseException], ...]
+) -> Callable[[BaseException], bool]:
+    def _retry_if_exception_these_types(exception: BaseException) -> bool:
         return isinstance(exception, retryable_types)
 
     return _retry_if_exception_these_types
 
 
-def retry(*dargs, **dkw):
+def retry(*dargs: Any, **dkw: Any) -> Callable:
     """
     Decorator function that instantiates the Retrying object
     @param *dargs: positional arguments passed to Retrying object
@@ -62,27 +65,29 @@ def retry(*dargs, **dkw):
 class Retrying(object):
     def __init__(
         self,
-        stop=None,
-        wait=None,
-        stop_max_attempt_number=None,
-        stop_max_delay=None,
-        wait_fixed=None,
-        wait_random_min=None,
-        wait_random_max=None,
-        wait_incrementing_start=None,
-        wait_incrementing_increment=None,
-        wait_incrementing_max=None,
-        wait_exponential_multiplier=None,
-        wait_exponential_max=None,
-        retry_on_exception=None,
-        retry_on_result=None,
-        wrap_exception=False,
-        stop_func=None,
-        wait_func=None,
-        wait_jitter_max=None,
-        before_attempts=None,
-        after_attempts=None,
-    ):
+        stop: Optional[str] = None,
+        wait: Optional[str] = None,
+        stop_max_attempt_number: Optional[int] = None,
+        stop_max_delay: Optional[int] = None,
+        wait_fixed: Optional[int] = None,
+        wait_random_min: Optional[int] = None,
+        wait_random_max: Optional[int] = None,
+        wait_incrementing_start: Optional[int] = None,
+        wait_incrementing_increment: Optional[int] = None,
+        wait_incrementing_max: Optional[int] = None,
+        wait_exponential_multiplier: Optional[int] = None,
+        wait_exponential_max: Optional[int] = None,
+        retry_on_exception: Optional[
+            Union[Callable[[BaseException], bool], Iterable[Type[BaseException]]]
+        ] = None,
+        retry_on_result: Optional[Callable[[Any], bool]] = None,
+        wrap_exception: bool = False,
+        stop_func: Optional[Callable[[int, int], bool]] = None,
+        wait_func: Optional[Callable[[int, int], int]] = None,
+        wait_jitter_max: Optional[int] = None,
+        before_attempts: Optional[Callable[[int], Any]] = None,
+        after_attempts: Optional[Callable[[int], Any]] = None,
+    ) -> None:
 
         self._stop_max_attempt_number = (
             5 if stop_max_attempt_number is None else stop_max_attempt_number
@@ -178,28 +183,36 @@ class Retrying(object):
 
         self._wrap_exception = wrap_exception
 
-    def stop_after_attempt(self, previous_attempt_number, delay_since_first_attempt_ms):
+    def stop_after_attempt(
+        self, previous_attempt_number: int, delay_since_first_attempt_ms: int
+    ) -> bool:
         """Stop after the previous attempt >= stop_max_attempt_number."""
         return previous_attempt_number >= self._stop_max_attempt_number
 
-    def stop_after_delay(self, previous_attempt_number, delay_since_first_attempt_ms):
+    def stop_after_delay(
+        self, previous_attempt_number: int, delay_since_first_attempt_ms: int
+    ) -> bool:
         """Stop after the time from the first attempt >= stop_max_delay."""
         return delay_since_first_attempt_ms >= self._stop_max_delay
 
     @staticmethod
-    def no_sleep(previous_attempt_number, delay_since_first_attempt_ms):
+    def no_sleep(previous_attempt_number: int, delay_since_first_attempt_ms: int) -> int:
         """Don't sleep at all before retrying."""
         return 0
 
-    def fixed_sleep(self, previous_attempt_number, delay_since_first_attempt_ms):
+    def fixed_sleep(self, previous_attempt_number: int, delay_since_first_attempt_ms: int) -> int:
         """Sleep a fixed amount of time between each retry."""
         return self._wait_fixed
 
-    def random_sleep(self, previous_attempt_number, delay_since_first_attempt_ms):
+    def random_sleep(
+        self, previous_attempt_number: int, delay_since_first_attempt_ms: int
+    ) -> int:
         """Sleep a random amount of time between wait_random_min and wait_random_max"""
         return random.randint(self._wait_random_min, self._wait_random_max)
 
-    def incrementing_sleep(self, previous_attempt_number, delay_since_first_attempt_ms):
+    def incrementing_sleep(
+        self, previous_attempt_number: int, delay_since_first_attempt_ms: int
+    ) -> int:
         """
         Sleep an incremental amount of time after each attempt, starting at
         wait_incrementing_start and incrementing by wait_incrementing_increment
@@ -213,7 +226,9 @@ class Retrying(object):
             result = 0
         return result
 
-    def exponential_sleep(self, previous_attempt_number, delay_since_first_attempt_ms):
+    def exponential_sleep(
+        self, previous_attempt_number: int, delay_since_first_attempt_ms: int
+    ) -> int:
         exp = 2**previous_attempt_number
         result = self._wait_exponential_multiplier * exp
         if result > self._wait_exponential_max:
@@ -223,14 +238,14 @@ class Retrying(object):
         return result
 
     @staticmethod
-    def never_reject(result):
+    def never_reject(result: Any) -> bool:
         return False
 
     @staticmethod
-    def always_reject(result):
+    def always_reject(result: Any) -> bool:
         return True
 
-    def should_reject(self, attempt):
+    def should_reject(self, attempt: "Attempt") -> bool:
         reject = False
         if attempt.has_exception:
             reject |= self._retry_on_exception(attempt.value[1])
@@ -239,7 +254,7 @@ class Retrying(object):
 
         return reject
 
-    def call(self, fn, *args, **kwargs):
+    def call(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         start_time = int(round(time.time() * 1000))
         attempt_number = 1
         while True:
@@ -282,12 +297,12 @@ class Attempt(object):
     occurred during the execution.
     """
 
-    def __init__(self, value, attempt_number, has_exception):
+    def __init__(self, value: Any, attempt_number: int, has_exception: bool) -> None:
         self.value = value
         self.attempt_number = attempt_number
         self.has_exception = has_exception
 
-    def get(self, wrap_exception=False):
+    def get(self, wrap_exception: bool = False) -> Any:
         """
         Return the return value of this Attempt instance or raise an Exception.
         If wrap_exception is true, this Attempt is wrapped inside of a
@@ -301,7 +316,7 @@ class Attempt(object):
         else:
             return self.value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.has_exception:
             return "Attempts: {0}, Error:\n{1}".format(
                 self.attempt_number, "".join(traceback.format_tb(self.value[2]))
@@ -315,8 +330,8 @@ class RetryError(Exception):
     A RetryError encapsulates the last Attempt instance right before giving up.
     """
 
-    def __init__(self, last_attempt):
+    def __init__(self, last_attempt: Attempt) -> None:
         self.last_attempt = last_attempt
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "RetryError[{0}]".format(self.last_attempt)
